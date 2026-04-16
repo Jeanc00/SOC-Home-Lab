@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOC Detection Lab — Jean Carlos Urbaez Tejada</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;600;700;900&family=Barlow+Condensed:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #060a0f;
+    --panel: #0b1118;
+    --border: #1a2a3a;
+    --accent: #00e5ff;
+    --accent2: #ff4d6d;
+    --accent3: #39ff14;
+    --text: #c9d8e8;
+    --muted: #4a6070;
+    --mono: 'Share Tech Mono', monospace;
+    --sans: 'Barlow', sans-serif;
+    --cond: 'Barlow Condensed', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-weight: 300;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,229,255,0.015) 2px,
+      rgba(0,229,255,0.015) 4px
+    );
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 60px 32px;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    border-left: 3px solid var(--accent);
+    padding-left: 24px;
+    margin-bottom: 56px;
+    animation: fadeIn 0.6s ease both;
+  }
+
+  .header-tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    opacity: 0.8;
+  }
+
+  h1 {
+    font-family: var(--cond);
+    font-size: clamp(36px, 6vw, 64px);
+    font-weight: 900;
+    line-height: 1;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+
+  h1 span { color: var(--accent); }
+
+  .author-line {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 16px;
+  }
+
+  .author-line a {
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.2s;
+  }
+  .author-line a:hover { border-color: var(--accent); }
+
+  /* ── STAT GRID ── */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 2px;
+    margin-bottom: 48px;
+    animation: fadeIn 0.6s 0.1s ease both;
+  }
+
+  .stat {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 20px 18px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .stat:hover { border-color: var(--accent); }
+  .stat::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 2px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+  }
+  .stat:hover::after { transform: scaleX(1); }
+
+  .stat-value {
+    font-family: var(--cond);
+    font-size: 36px;
+    font-weight: 900;
+    color: var(--accent);
+    line-height: 1;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+
+  /* ── SECTION ── */
+  .section {
+    margin-bottom: 48px;
+    animation: fadeIn 0.6s 0.2s ease both;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .section-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent2);
+    letter-spacing: 2px;
+  }
+
+  h2 {
+    font-family: var(--cond);
+    font-size: 20px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: #fff;
+  }
+
+  .section-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--border);
+    padding: 20px 24px;
+    margin-bottom: 8px;
+    transition: border-left-color 0.2s, background 0.2s;
+  }
+  .card:hover {
+    border-left-color: var(--accent);
+    background: #0d161f;
+  }
+
+  .card-title {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 14px;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+
+  .card-body {
+    font-size: 13px;
+    color: var(--text);
+    opacity: 0.8;
+    line-height: 1.7;
+  }
+
+  /* ── STACK GRID ── */
+  .stack-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 8px;
+  }
+
+  .stack-item {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .stack-item:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+  }
+
+  .stack-name {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: bold;
+  }
+
+  .stack-role {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  /* ── VLAN TABLE ── */
+  .vlan-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .vlan-table th {
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted);
+    letter-spacing: 2px;
+    font-size: 10px;
+    text-transform: uppercase;
+  }
+  .vlan-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(26,42,58,0.5);
+    color: var(--text);
+  }
+  .vlan-table tr:hover td { background: rgba(0,229,255,0.03); }
+  .vlan-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 10px;
+    font-family: var(--mono);
+    border: 1px solid;
+    border-radius: 2px;
+  }
+  .v10 { color: #60a5fa; border-color: #1d4ed8; }
+  .v20 { color: #34d399; border-color: #065f46; }
+  .v30 { color: #a78bfa; border-color: #4c1d95; }
+  .v40 { color: #fb923c; border-color: #92400e; }
+  .v50 { color: var(--accent); border-color: #0e7490; }
+  .v60 { color: var(--muted); border-color: var(--border); }
+
+  /* ── HIGHLIGHT BOX ── */
+  .highlight {
+    border: 1px solid rgba(0,229,255,0.3);
+    background: rgba(0,229,255,0.04);
+    padding: 20px 24px;
+    margin-bottom: 8px;
+    position: relative;
+  }
+  .highlight::before {
+    content: '// VALIDATED';
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent3);
+    position: absolute;
+    top: -8px;
+    right: 16px;
+    background: var(--bg);
+    padding: 0 8px;
+    letter-spacing: 2px;
+  }
+
+  /* ── TAGS ── */
+  .tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 10px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+  .tag.red { border-color: rgba(255,77,109,0.4); color: var(--accent2); }
+  .tag.green { border-color: rgba(57,255,20,0.3); color: var(--accent3); }
+  .tag.blue { border-color: rgba(0,229,255,0.3); color: var(--accent); }
+
+  /* ── DETECTION PIPELINE ── */
+  .pipeline {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    overflow-x: auto;
+    padding: 16px 0;
+  }
+
+  .pipe-step {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 12px 16px;
+    text-align: center;
+    min-width: 100px;
+    flex-shrink: 0;
+  }
+  .pipe-step-name {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    display: block;
+  }
+  .pipe-step-sub {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 2px;
+    display: block;
+  }
+  .pipe-arrow {
+    color: var(--accent);
+    font-size: 18px;
+    padding: 0 6px;
+    flex-shrink: 0;
+    opacity: 0.5;
+  }
+
+  /* ── PROOF BOX ── */
+  .proof-box {
+    background: #040810;
+    border: 1px solid rgba(57,255,20,0.2);
+    padding: 20px 24px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.9;
+    position: relative;
+  }
+  .proof-box::before {
+    content: 'LIVE DETECTION LOG — April 3, 2026';
+    font-size: 10px;
+    color: var(--accent3);
+    letter-spacing: 3px;
+    display: block;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(57,255,20,0.15);
+  }
+  .log-key { color: var(--muted); }
+  .log-val { color: var(--accent3); }
+  .log-warn { color: var(--accent2); }
+
+  /* ── ROADMAP ── */
+  .roadmap-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(26,42,58,0.5);
+  }
+  .roadmap-status {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 8px;
+    border: 1px solid;
+    white-space: nowrap;
+    margin-top: 2px;
+  }
+  .status-done { color: var(--accent3); border-color: rgba(57,255,20,0.3); }
+  .status-planned { color: var(--accent2); border-color: rgba(255,77,109,0.3); }
+  .status-progress { color: #fbbf24; border-color: rgba(251,191,36,0.3); }
+  .roadmap-text { font-size: 13px; color: var(--text); opacity: 0.85; }
+
+  /* ── FOOTER ── */
+  .footer {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: gap;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 600px) {
+    .container { padding: 32px 16px; }
+    .stat-grid { grid-template-columns: repeat(2, 1fr); }
+    .footer { flex-direction: column; gap: 8px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-tag">// Portfolio Project · Home SOC Lab · v4.0 · April 2026</div>
+    <h1>SOC <span>Detection</span> Lab</h1>
+    <p style="font-size:15px; color:var(--text); margin-top:12px; max-width:600px; opacity:0.85;">
+      Enterprise-grade security operations center built from scratch in a fully virtualized environment —
+      dual SIEM, VLAN segmentation, active threat detection, and automated incident response.
+    </p>
+    <div class="author-line">
+      Jean Carlos Urbaez Tejada &nbsp;·&nbsp;
+      <a href="https://linkedin.com/in/jean-cybersecurity" target="_blank">linkedin.com/in/jean-cybersecurity</a>
+      &nbsp;·&nbsp;
+      <a href="https://github.com/Jeanc00" target="_blank">github.com/Jeanc00</a>
+    </div>
+  </header>
+
+  <!-- STATS -->
+  <div class="stat-grid">
+    <div class="stat">
+      <span class="stat-value">12+</span>
+      <span class="stat-label">Virtual Machines</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">6</span>
+      <span class="stat-label">Segmented VLANs</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">2</span>
+      <span class="stat-label">SIEM Platforms</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">&lt;2s</span>
+      <span class="stat-label">Auto-Quarantine Time</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">9+</span>
+      <span class="stat-label">Incidents Resolved</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">100%</span>
+      <span class="stat-label">Detection Validated</span>
+    </div>
+  </div>
+
+  <!-- SECTION 1: WHAT THIS IS -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">01</span>
+      <h2>What Was Built</h2>
+      <div class="section-line"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Fully Virtualized Enterprise SOC Environment</div>
+      <div class="card-body">
+        Running on a single iMac (i7-10700K, 64GB RAM) with VMware Fusion hosting 12+ VMs across 6 isolated VLANs —
+        simulating a complete enterprise network with Users, Executive, Servers, SOC, and Quarantine segments.
+        pfSense handles inter-VLAN routing, NAT, and firewall enforcement. Every design decision mirrors real-world SOC architecture.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Dual-SIEM Architecture — Wazuh + Splunk Running in Parallel</div>
+      <div class="card-body">
+        Both platforms receive telemetry simultaneously from Windows, Linux, and macOS endpoints —
+        allowing cross-platform event correlation, alert comparison, and realistic analyst workflows on either tool.
+        Splunk is used for SPL-driven analytics and dashboarding; Wazuh for XDR alerting and VirusTotal enrichment.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">End-to-End Detection → Alert → Email Pipeline</div>
+      <div class="card-body">
+        Scan tool execution on Kali Blue triggers a Splunk alert within 60 seconds, which automatically extracts the
+        target IP via regex, generates a PDF forensic report, and delivers it to Gmail — with zero human interaction required.
+        Validated live on April 3, 2026.
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: SECURITY STACK -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">02</span>
+      <h2>Security Stack</h2>
+      <div class="section-line"></div>
+    </div>
+    <div class="stack-grid">
+      <div class="stack-item"><span class="stack-name">Splunk</span><span class="stack-role">SIEM · Analytics · Alerting</span></div>
+      <div class="stack-item"><span class="stack-name">Wazuh</span><span class="stack-role">SIEM · XDR · FIM</span></div>
+      <div class="stack-item"><span class="stack-name">Suricata</span><span class="stack-role">Network IDS (EVE JSON)</span></div>
+      <div class="stack-item"><span class="stack-name">pfSense</span><span class="stack-role">Firewall · VLAN Router</span></div>
+      <div class="stack-item"><span class="stack-name">Sysmon</span><span class="stack-role">Endpoint Telemetry</span></div>
+      <div class="stack-item"><span class="stack-name">Active Directory</span><span class="stack-role">Identity · GPOs · DNS</span></div>
+      <div class="stack-item"><span class="stack-name">VirusTotal API</span><span class="stack-role">Threat Intel · Auto-Quarantine</span></div>
+      <div class="stack-item"><span class="stack-name">Kali Linux</span><span class="stack-role">Blue Team · Attack Sim</span></div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: NETWORK TOPOLOGY -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">03</span>
+      <h2>Network Topology</h2>
+      <div class="section-line"></div>
+    </div>
+    <table class="vlan-table">
+      <thead>
+        <tr>
+          <th>VLAN</th>
+          <th>Segment</th>
+          <th>Subnet</th>
+          <th>Key Systems</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="vlan-badge v10">10</span></td><td>Management</td><td>10.10.10.0/24</td><td>pfSense, Suricata, Admin-WS</td></tr>
+        <tr><td><span class="vlan-badge v20">20</span></td><td>Users</td><td>10.10.20.0/24</td><td>WIN11-USER01, USER02</td></tr>
+        <tr><td><span class="vlan-badge v30">30</span></td><td>Executive</td><td>10.10.30.0/24</td><td>EXEC-USER03, USER04</td></tr>
+        <tr><td><span class="vlan-badge v40">40</span></td><td>Servers</td><td>10.10.40.0/24</td><td>DC01 (WinServer 2025), Ubuntu Data Server</td></tr>
+        <tr><td><span class="vlan-badge v50">50</span></td><td>SOC</td><td>10.10.50.0/24</td><td>Splunk, Wazuh, Kali Blue</td></tr>
+        <tr><td><span class="vlan-badge v60">60</span></td><td>Quarantine</td><td>10.10.60.0/24</td><td>Isolated — Malware Containment</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 4: VALIDATED DETECTIONS -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">04</span>
+      <h2>Validated Detection Scenarios</h2>
+      <div class="section-line"></div>
+    </div>
+
+    <div class="highlight">
+      <div class="card-title" style="margin-bottom:8px;">Scan Tool Execution Detection — Full Pipeline</div>
+      <div class="pipeline">
+        <div class="pipe-step"><span class="pipe-step-name">Kali Blue</span><span class="pipe-step-sub">nmap executed</span></div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step"><span class="pipe-step-name">auth.log</span><span class="pipe-step-sub">sudo logged</span></div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step"><span class="pipe-step-name">Splunk UF</span><span class="pipe-step-sub">forwarded</span></div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step"><span class="pipe-step-name">SPL Alert</span><span class="pipe-step-sub">regex + IP extraction</span></div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step"><span class="pipe-step-name">Gmail</span><span class="pipe-step-sub">PDF delivered</span></div>
+      </div>
+      <div class="tag-row">
+        <span class="tag blue">MITRE T1046</span>
+        <span class="tag blue">Network Service Scanning</span>
+        <span class="tag green">Validated Live</span>
+        <span class="tag">60s detection time</span>
+      </div>
+    </div>
+
+    <div class="proof-box">
+      <span class="log-key">timestamp: </span><span class="log-val">2026-04-03 19:42:28</span><br>
+      <span class="log-key">host:      </span><span class="log-val">jean-blue (Kali)</span><br>
+      <span class="log-key">user:      </span><span class="log-val">root</span><br>
+      <span class="log-key">command:   </span><span class="log-val">/usr/bin/nmap</span><br>
+      <span class="log-key">target_ip: </span><span class="log-warn">10.10.20.101 (WIN11-USER01)</span><br>
+      <span class="log-key">action:    </span><span class="log-val">Alert fired → PDF generated → Email delivered to Gmail</span><br>
+      <span class="log-key">human intervention: </span><span class="log-val" style="color:var(--accent);">NONE</span>
+    </div>
+
+    <div style="margin-top:8px;">
+      <div class="card">
+        <div class="card-title">VirusTotal + Auto-Quarantine — EICAR Test (March 19, 2026)</div>
+        <div class="card-body">
+          Wazuh syscheck detected EICAR file → queried VirusTotal API → 62/67 engines positive → 
+          Rule 87105 Level 12 (Critical) triggered → quarantine_file.sh executed automatically.
+          File isolated in under <strong style="color:var(--accent)">2 seconds</strong>. Zero manual steps.
+        </div>
+        <div class="tag-row">
+          <span class="tag blue">MITRE T1203</span>
+          <span class="tag green">Auto-Response Active</span>
+          <span class="tag">62/67 engines · 92.5% detection</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Privilege Escalation · Lateral Movement · Auth Log Analysis</div>
+        <div class="card-body">
+          Sudo usage detection on Linux via linux_secure sourcetype. Windows EventCode correlation 
+          (4624/4625/4648/4672/4720) across domain-joined endpoints. Sysmon EventIDs 1, 3, 11, 13 
+          validated on all Windows hosts. AD trust relationship failures diagnosed and resolved.
+        </div>
+        <div class="tag-row">
+          <span class="tag blue">MITRE T1078</span>
+          <span class="tag blue">T1021</span>
+          <span class="tag blue">T1055</span>
+          <span class="tag">AD · Kerberos · Sysmon</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 5: KEY ENGINEERING CHALLENGES -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">05</span>
+      <h2>Engineering Challenges Solved</h2>
+      <div class="section-line"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Splunk Config Precedence — Silent Email Failure</div>
+      <div class="card-body">
+        Alerts fired and logged INFO but no emails arrived. Root cause: 
+        <code style="color:var(--accent); font-size:12px;">apps/search/local/alert_actions.conf</code> silently overrode 
+        <code style="color:var(--accent); font-size:12px;">system/local/</code> credentials. 
+        Diagnosed by tracing Splunk's config merge hierarchy. Resolved by updating the correct precedence file.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Suricata ET SCAN Limitation — Internal Traffic Blind Spot</div>
+      <div class="card-body">
+        Discovered that Suricata's ET SCAN ruleset only fires for EXTERNAL_NET → HOME_NET traffic. 
+        VLAN-to-VLAN internal scans are invisible to Suricata. Solution: use Sysmon EventID 3 
+        (Network Connection) to detect internal reconnaissance at the endpoint level.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">SPL Regex for Target IP Extraction from Raw Log</div>
+      <div class="card-body">
+        Standard field extraction missed target IPs because <code style="color:var(--accent);font-size:12px;">COMMAND</code> 
+        field only contains the binary path. Built a custom rex pattern against <code style="color:var(--accent);font-size:12px;">_raw</code> 
+        to extract the actual target IP from the full sudo log line — providing complete forensic context in every alert email.
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 6: ROADMAP -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">06</span>
+      <h2>Roadmap</h2>
+      <div class="section-line"></div>
+    </div>
+
+    <div class="roadmap-item">
+      <span class="roadmap-status status-done">DONE</span>
+      <div class="roadmap-text">SOC Security Overview Dashboard (Splunk Dashboard Studio) with real-time auto-refresh panels and color-coded thresholds</div>
+    </div>
+    <div class="roadmap-item">
+      <span class="roadmap-status status-done">DONE</span>
+      <div class="roadmap-text">Suricata → Splunk EVE JSON pipeline — full network + endpoint visibility in single SIEM</div>
+    </div>
+    <div class="roadmap-item">
+      <span class="roadmap-status status-done">DONE</span>
+      <div class="roadmap-text">Email alerting with PDF attachment — end-to-end validated, zero human intervention</div>
+    </div>
+    <div class="roadmap-item">
+      <span class="roadmap-status status-progress">IN PROGRESS</span>
+      <div class="roadmap-text">3 full documented attack scenarios: Red Team attack → detection → IR report</div>
+    </div>
+    <div class="roadmap-item">
+      <span class="roadmap-status status-planned">PLANNED</span>
+      <div class="roadmap-text">External Red Team Kali (bridge mode) · Velociraptor threat hunting · TheHive/Cortex SOAR · Honeypot in VLAN 60</div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div>jean-SIEM · SOC Detection Lab v4.0 · April 2026</div>
+    <div style="display:flex; gap:20px;">
+      <a href="https://linkedin.com/in/jean-cybersecurity" style="color:var(--accent); text-decoration:none;">LinkedIn</a>
+      <a href="https://github.com/Jeanc00" style="color:var(--accent); text-decoration:none;">GitHub</a>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
